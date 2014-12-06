@@ -5,6 +5,8 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 import java.text.SimpleDateFormat;
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
@@ -22,6 +24,7 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
+import android.text.format.Time;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
@@ -49,6 +52,10 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback{
 	TextView tv_info;	TextView tv_TimeToSel; 
 	TextView tv_consoleBoard; TextView tv_consoleLine;
 	private int At = 50;     private int Med = 50;
+
+    private int delta = 0; private int high_alpha = 0; private int high_beta = 0; private int low_alpha = 0;
+    private int low_beta = 0; private int low_gamma = 0; private int mid_gamma = 0; private int theta = 0;
+    
 	TextView tv_Med;    TextView tv_Att;    TextView tv_Vel;    TextView tv_AmM;    
     	/** A handle to the thread that's actually running the animation. */
     private MusicPlayerThread mMusicPlayerThread;   
@@ -59,6 +66,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback{
     
     final int ActivityTwoRequestCode = 0;
     Bitmap myBitmap;
+    private Map<String, Integer> tickData;
     
     // -- camera 
     Camera camera;
@@ -313,7 +321,6 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback{
 	                    // -- First send Attention data to the backend in async way
 	                    //APIClient.postData(null, "attention", String.valueOf(msg.arg1), null); // old
 	                	APIClient.collectAttention(null, msg.arg1);
-	                	
 	                	//Log.e(getString(R.string.app_name), "camera.takePicture()");  
 	                		 	               
 	                    At = msg.arg1;         
@@ -421,20 +428,24 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback{
 	                    } */
  	                    		                    
 	                    // --saving data to file
-	                    /* String filename ="so_v2_<date_time>.csv";
+	                    String filename; 
+	                    String user_g = "ihar";
 	                    Time now = new Time();
 	                    now.setToNow();
 	                    String date_time = new SimpleDateFormat("yyyy-MM-dd").format(new Date(System.currentTimeMillis()));                    
-	                    filename = "so_v2_" + date_time + ".csv";
+	                    filename = "bciTerminal_" + date_time + ".csv";
 	                    
-	                   // writeToExternalStoragePublic(filename, user_g, now, At, Med);
-	                    */
+	                    writeToExternalStoragePublic(filename, user_g, now, At, Med);
+	                    
 	                    break;
 	                    
 	                case TGDevice.MSG_MEDITATION:
 	                    //APIClient.postData(null, "meditation", String.valueOf(msg.arg1), null); //old code
 	                	APIClient.collectMeditation(null, msg.arg1);
 
+	                	tickData = new HashMap<String, Integer>();
+	                    tickData.put("meditation", msg.arg1);
+	                    
 	                    Med = msg.arg1;
 	                    tv_Med.setText(String.valueOf(Med));
 	                    mMusicPlayerThread.setMeditation(Med);
@@ -483,14 +494,15 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback{
 	                    TGEegPower eegPower = (TGEegPower) msg.obj;
 	                    APIClient.collectEEGPower(null, eegPower);
 	                    
-	                   /* delta = eegPower.delta;
+	                    delta = eegPower.delta;
 	                    high_alpha = eegPower.highAlpha;
 	                    high_beta = eegPower.highBeta;
 	                    low_alpha = eegPower.lowAlpha;
 	                    low_beta = eegPower.lowBeta;
 	                    low_gamma = eegPower.lowGamma;
 	                    mid_gamma = eegPower.midGamma;
-	                    theta = eegPower.theta;*/
+	                    theta = eegPower.theta;
+	                    
 	                    break;
 	                default:
 	                    break;
@@ -565,7 +577,57 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback{
 	    	}
 	    };
 
-	    	  
+	    public void writeToExternalStoragePublic(String filename,
+	    		String user_g_l, Time now_l, int At_l, int Med_l) {
+	    	
+	        String packageName = this.getPackageName();
+	        String path = Environment.getExternalStorageDirectory().getAbsolutePath()
+	        		+ "/Android/data/" + packageName + "/files/";
+
+	        String titles = "bciApp;username;time;att;med;"
+	        		+ "delta;high_alpha;high_beta;low_alpha;low_beta;low_gamma;mid_gamma;theta;";
+	        
+	        try {
+	               boolean exists = (new File(path)).exists();
+	               if (!exists) {
+	                    new File(path).mkdirs();
+	               }
+	                   // -- open output stream
+	               File file = new File(path + filename);
+	               if(file.exists()) {
+	                    	FileOutputStream fOut = new FileOutputStream(path + filename,true);
+	                    	// -- write Head and integers as separated ascii's
+	                    	//fOut.write((titles.toString() + "\n").getBytes());
+	                    	fOut.write(("bciTerminal;").getBytes());
+	                    	fOut.write((user_g_l.toString() + ";").getBytes());
+	                    	fOut.write((now_l.toString() + ";").getBytes());
+	                        fOut.write((Integer.valueOf(At_l).toString() + ";").getBytes());
+	                        fOut.write((Integer.valueOf(Med_l).toString() + ";").getBytes());
+	                        fOut.write((Double.valueOf(delta).toString() + ";").getBytes());                        
+	                        fOut.write((Double.valueOf(high_alpha).toString() + ";").getBytes());
+	                        fOut.write((Double.valueOf(high_beta).toString() + ";").getBytes());
+	                        fOut.write((Double.valueOf(low_alpha).toString() + ";").getBytes());
+	                        fOut.write((Double.valueOf(low_beta).toString() + ";").getBytes());
+	                        fOut.write((Double.valueOf(low_gamma).toString() + ";").getBytes());
+	                        fOut.write((Double.valueOf(mid_gamma).toString() + ";").getBytes());
+	                        fOut.write((Double.valueOf(theta).toString() + ";").getBytes());
+	                        fOut.flush();
+	                        fOut.close();
+	                    }    
+	                else {
+	                    	// -- write integers as separated ascii's
+	                    	FileOutputStream fOut = new FileOutputStream(path + filename,true);
+	                    	fOut.write((titles.toString() + "\n").getBytes());
+	                        fOut.flush();
+	                        fOut.close();
+	                    }
+	                    
+	                } catch (IOException e) {
+	                    e.printStackTrace();
+	                }
+	          
+	    }	  
+	    
 	        private File getDir() {
 	    	    File sdDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
 	    	    return new File(sdDir, "eeg_picture");
