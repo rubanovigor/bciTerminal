@@ -8,6 +8,9 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.text.SimpleDateFormat;
+
+import android.accounts.Account;
+import android.accounts.AccountManager;
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.content.Intent;
@@ -66,7 +69,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback{
     
     final int ActivityTwoRequestCode = 0;
     Bitmap myBitmap;
-    private Map<String, Integer> tickData;
+    String gmail = null;
     
     // -- camera 
     Camera camera;
@@ -141,6 +144,18 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback{
 				// TODO Auto-generated method stub
 				camera.takePicture(myShutterCallback, myPictureCallback_RAW, myPictureCallback_JPG);
 			}});*/
+		
+		AccountManager manager = (AccountManager) getSystemService(ACCOUNT_SERVICE);
+		Account[] list = manager.getAccounts();
+		
+		for(Account account: list)
+		{
+		    if(account.type.equalsIgnoreCase("com.google"))
+		    {
+		        gmail = account.name;
+		        break;
+		    }
+		}
                   
 	}
 
@@ -429,22 +444,20 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback{
  	                    		                    
 	                    // --saving data to file
 	                    String filename; 
-	                    String user_g = "ihar";
+	                    //String user_g = "ihar";
 	                    Time now = new Time();
 	                    now.setToNow();
 	                    String date_time = new SimpleDateFormat("yyyy-MM-dd").format(new Date(System.currentTimeMillis()));                    
 	                    filename = "bciTerminal_" + date_time + ".csv";
 	                    
-	                    writeToExternalStoragePublic(filename, user_g, now, At, Med);
+	                   // writeToExternalStoragePublic(filename, user_g, now, At, Med);
+	                    writeToExternalStoragePublic(filename, gmail, now, At, Med);
 	                    
 	                    break;
 	                    
 	                case TGDevice.MSG_MEDITATION:
 	                    //APIClient.postData(null, "meditation", String.valueOf(msg.arg1), null); //old code
 	                	APIClient.collectMeditation(null, msg.arg1);
-
-	                	tickData = new HashMap<String, Integer>();
-	                    tickData.put("meditation", msg.arg1);
 	                    
 	                    Med = msg.arg1;
 	                    tv_Med.setText(String.valueOf(Med));
